@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Pypi-legacy by YOTOV-LIMITED</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Pypi-legacy</h1>
+      <h2 class="project-tagline">the codebase *currently* serving PyPI, for next-gen see https://github.com/pypa/warehouse</h2>
+      <a href="https://github.com/YOTOV-LIMITED/pypi-legacy" class="btn">View on GitHub</a>
+      <a href="https://github.com/YOTOV-LIMITED/pypi-legacy/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/YOTOV-LIMITED/pypi-legacy/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h2>
+<a id="required-packages" class="anchor" href="#required-packages" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Required packages</h2>
+
+<p>To run the PyPI software, you need Python 2.7+ and PostgreSQL</p>
+
+<h2>
+<a id="quick-development-setup" class="anchor" href="#quick-development-setup" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick development setup</h2>
+
+<p>It is recommended to read
+<a href="http://wiki.python.org/moin/CheeseShopDev#DevelopmentEnvironmentHints">http://wiki.python.org/moin/CheeseShopDev#DevelopmentEnvironmentHints</a> though
+this document is quite out of date, but contain some useful informations.</p>
+
+<p>Make sure you have a working PostgreSQL Database Available, by getting a local
+development install of <em>Warehouse</em>. See the Database Setup Below.</p>
+
+<p>Make sure your config.ini is up-to-date, initially copying from
+config.ini.template. Change CONFIG_FILE at the beginning of <code>pypi.wsgi</code>,
+so it looks like this::</p>
+
+<pre><code>CONFIG_FILE = 'config.ini'
+</code></pre>
+
+<p>Then, you can create a development environment like this, if you have
+virtualenv installed::</p>
+
+<pre><code>$ virtualenv --no-site-packages .
+$ pip install -r requirements.txt
+</code></pre>
+
+<p>Then you can launch the server using the pypi.wsgi script::</p>
+
+<pre><code>$ python pypi.wsgi
+Serving on port 8000...
+</code></pre>
+
+<p>PyPI will be available in your browser at http://localhost:8000</p>
+
+<h2>
+<a id="database-setup" class="anchor" href="#database-setup" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Database Setup</h2>
+
+<p>Postgres</p>
+
+<pre><code>
+.. note::
+
+    These instruction are in progress.
+
+
+Connect Legacy-PYPI to warehouse
+</code></pre>
+
+<p>It is highly recommended, and simpler to connect legacy-pypi to an already
+working <code>warehouse &lt;https://github.com/pypa/warehouse&gt;</code>_ setup.</p>
+
+<p>Once you have a working warehouse setup, it should expose the PostgreSQL
+database on port 5433, you can check that in the <code>docker-compose.yml</code> file
+which should contain a <code>ports</code> section like so::</p>
+
+<p>db:
+    image: postgres:9.5
+    ports:
+        - "5433:5433"</p>
+
+<p>Modify the pypi-legacy <code>config.ini</code> <code>[database]</code> section to connect to this
+database, You can find the required information as follows. In the
+<code>docker-compose.yml</code> file find the line the set the DATABASE_URL::</p>
+
+<pre><code>DATABASE_URL: postgresql://postgres@db/warehouse
+</code></pre>
+
+<p>It is structure in the following way: <code>DATABASE_URL: postgresql://&lt;user_name&gt;@&lt;host&gt;/&lt;database_name&gt;</code></p>
+
+<p>Use the <code>docker-machine env</code> to find the Docker IP, for example::</p>
+
+<pre><code>$ docker-machine env
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://192.168.99.100:2376"
+export DOCKER_CERT_PATH="$HOME/.docker/machine/machines/default"
+export DOCKER_MACHINE_NAME="default"
+</code></pre>
+
+<p>Here the docker-ip is <code>192.168.99.100</code>.</p>
+
+<p>The final <code>config.ini</code> will be like::</p>
+
+<pre><code>[database]
+
+;Postgres Database using
+;warehouse's docker-compose
+host = 192.168.99.100
+port = 5433
+name = warehouse
+user = postgres
+</code></pre>
+
+<p>Start warehouse as usual before starting PyPI-legacy, then start pypi-legacy
+that should now connect to the local warehouse database.</p>
+
+<p>Run a local Postgres Database</p>
+
+<pre><code>
+It is recommended not to use a local PostgreSQL database as all the Database
+migration and maintenance tasks are performed by warehouse.
+
+To fill a database, run ``pkgbase_schema.sql`` on an empty Postgres database.
+Then run ``tools/demodata`` to populate the database with dummy data.
+
+To initialize an empty Postgres Database, after making sure Postgres is
+installed on your machine, change to a directory of your convenience, like the
+root of this repository, and issue the following::
+
+  $ mkdir tmp
+  $ chmod 700 tmp
+  $ initdb -D tmp
+
+The ``initdb`` step will likely tell you how to start a database server; likely
+something along the line of::
+
+  $ pg_ctl -D tmp -l logfile start
+
+You want to start that in a separate terminal, in the folder where you
+created the previous ``tmp`` directory, and run the above command.
+
+
+Back to our initial terminal use the following to list all available Postgres
+databases::
+
+  $ psql -l
+     Name    | Owner    | Encoding |   Collate   |    Ctype    |  Access privileges
+  -----------+----------+----------+-------------+-------------+---------------------
+   postgres  | guido_vr | UTF8     | en_US.UTF-8 | en_US.UTF-8 |
+   template0 | guido_vr | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/guido_vr     +
+             |          |          |             |             | guido_vr=CTc/guido_vr
+   template1 | guido_vr | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/guido_vr     +
+             |          |          |             |             | guido_vr=CTc/guido_vr
+
+Your exact input will differ. Note the _name_ of the database. In our case
+above, ``postgres``, and the _user_ name. In our case ``guido_vr``, they will
+be of use to configure the database in the ``config.ini`` file later.
+
+We now need to populate the database with an example data. For example,
+`example.sql &lt;https://github.com/pypa/warehouse/tree/master/dev&gt;`_ that can
+be found on the warehouse repository. After having it downloaded and unpacked,
+use the following::
+
+  $ pgsql -d postgres -f /path/to/example/file.sql
+
+Where ``postgres`` is the _name_ of the database noted above.
+
+
+Set up the ``config.ini`` file ``[database]`` section, to connect to the Postgres
+instance we just started::
+
+  [database]
+
+  ;Postgres Database
+  host = localhost
+  port = 5433
+  name = postgres
+  user = guido_vr
+
+
+The default _host_ is likely ``localhost``, and the _port_ number ``5433`` as well.
+adapt ``name`` and ``user`` with the value noted before.
+
+
+Sqlite
+</code></pre>
+
+<p>.. note::</p>
+
+<pre><code>Usage of the SqLite local database is not recommended; And might not be
+functional.
+</code></pre>
+
+<p>For testing purposes, run the following to create a <code>packages.db</code> file at the
+root of the repository::</p>
+
+<pre><code>python2 tools/mksqlite.py
+</code></pre>
+
+<p>Set <code>[database]driver</code> to <code>sqlite3</code> in <code>config.ini</code>, and
+<code>[database]name</code> to <code>packages.db</code>::</p>
+
+<pre><code>[database]
+
+driver = sqlite3
+name = package.db
+</code></pre>
+
+<p>Then run <code>tools/demodata</code>    to populate the database.</p>
+
+<p>PyPI Requires the <code>citext</code> extension to be installed.</p>
+
+<h2>
+<a id="testpypi-database-setup" class="anchor" href="#testpypi-database-setup" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>TestPyPI Database Setup</h2>
+
+<p>testpypi runs under postgres; because I don't care to fill my head with such
+trivialities, the setup commands are:</p>
+
+<p>createdb -O testpypi testpypi
+   psql -U testpypi testpypi &lt;pkgbase_schema.sql</p>
+
+<h2>
+<a id="restarting-pypi" class="anchor" href="#restarting-pypi" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Restarting PyPI</h2>
+
+<p>PyPI has 2 different pieces that need started, web server and the task runner.</p>
+
+<pre><code># Restart the web server
+$ /etc/init.d/pypi restart
+# Restart the task runner
+$ initctl restart pypi-worker
+</code></pre>
+
+<h2>
+<a id="clearing-a-stuck-cache" class="anchor" href="#clearing-a-stuck-cache" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Clearing a stuck cache</h2>
+
+<p>Users reporting stale data being displayed? Try:</p>
+
+<p>curl -X PURGE <a href="https://pypi.python.org/pypi/setuptools">https://pypi.python.org/pypi/setuptools</a></p>
+
+<p>(where the URL is the relevant one to the issue, I presume)</p>
+
+<p>To see what fastly thinks it knows about a page (or how it's getting to you) try:</p>
+
+<p>curl -I -H 'Fastly-Debug: 1'  <a href="https://pypi.python.org/pypi/setuptools">https://pypi.python.org/pypi/setuptools</a></p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/YOTOV-LIMITED/pypi-legacy">Pypi-legacy</a> is maintained by <a href="https://github.com/YOTOV-LIMITED">YOTOV-LIMITED</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
